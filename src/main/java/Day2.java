@@ -7,7 +7,7 @@ public class Day2 {
         // Day2 part 1
 //        FileReader<Round> fileReader = new FileReader<>("day2", Round::decode);
         // Day2 part 2
-        FileReader<Round> fileReader = new FileReader<>("day2", Round::elfDecode);
+        FileReader<Round> fileReader = new FileReader<>("day2", Round::elfDecode); // 12111
         System.out.println("Points = " + getWinningPoints(fileReader.readFile()));
     }
 
@@ -67,21 +67,10 @@ public class Day2 {
             if (this.equals(opponent)) {
                 return Result.DRAW;
             }
-            if (this.equals(ROCK)) {
-                if (opponent.equals(SCISSORS)) {
-                    return Result.WIN;
-                }
-            } else if (this.equals(PAPER)) {
-                if (opponent.equals(ROCK)) {
-                    return Result.WIN;
-                }
-
-            } else if (this.equals(SCISSORS)) {
-                if (opponent.equals(PAPER)) {
-                    return Result.WIN;
-                }
+            if (opponent.winsTo().equals(this)) {
+                return Result.LOSS;
             }
-            return Result.LOSS;
+            return Result.WIN;
         }
     }
 
