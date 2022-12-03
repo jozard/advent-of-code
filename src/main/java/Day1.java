@@ -1,34 +1,10 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.Function;
 
 public class Day1 {
     public static void main(String[] args) {
-        String fileName = "day1";
-        InputStream day1 = Day1.class.getClassLoader().getResourceAsStream(fileName);
-        if (day1 == null) {
-            throw new IllegalArgumentException(MessageFormat.format("File {0} not found", fileName));
-        }
-        System.out.println("Most calories = " + getMostCalories(readFile(day1)));
-    }
-
-    private static List<String> readFile(InputStream inputStream) {
-        List<String> result = new ArrayList<>();
-        try (InputStreamReader streamReader =
-                     new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-             BufferedReader reader = new BufferedReader(streamReader)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                result.add(line);
-            }
-        } catch (IOException e) {
-            System.out.println(MessageFormat.format("Error reading file: {0}", e.getMessage()));
-        }
-        return result;
+        FileReader<String> fileReader = new FileReader<>("day1", Function.identity());
+        System.out.println("Most calories = " + getMostCalories(fileReader.readFile()));
     }
 
     private static long getMostCalories(List<String> caloriesList) {
