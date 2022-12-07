@@ -19,7 +19,7 @@ public class FileReader<T> {
     }
 
     public List<T> readFile() {
-        InputStream fileStream = Day1.class.getClassLoader().getResourceAsStream(fileName);
+        InputStream fileStream = FileReader.class.getClassLoader().getResourceAsStream(fileName);
         if (fileStream == null) {
             throw new IllegalArgumentException(MessageFormat.format("File {0} not found!", fileName));
         }
