@@ -43,80 +43,27 @@ public class Day8 {
     }
 
     static int collectScore(Tree target, List<List<Tree>> forest) {
-//        System.out.println("x = " + x);
-//        System.out.println("y = " + y);
-//        System.out.println("tree size = " + forest.get(y).get(x).size);
+
         final long height = forest.size();
         final long width = forest.get(0).size();
-        int score = 1;
-//        System.out.println("Go right");
-        int extraScore = 1;
-        int i = target.x + 1;
-        while (i < width) {// go right
-//            System.out.println("Compare with " + forest.get(y).get(i).size);
-            if (forest.get(target.y).get(i).size >= target.size) {
-//                System.out.println("Break on tree size = " + forest.get(y).get(i).size);
-                break;
-            }
-            i++;
-            if (i == width) {
-                break;
-            }
-            extraScore++;
-        }
-//        System.out.println("extraScore = " + extraScore);
-        score *= extraScore;
-        extraScore = 1;
-//        System.out.println("Go left");
-        i = target.x - 1;
-        while (i > -1) {// go left
-//            System.out.println("Compare with " + forest.get(y).get(i).size);
-            if (forest.get(target.y).get(i).size >= target.size) {
-//                System.out.println("Break on tree size = " + forest.get(y).get(i).size);
-                break;
-            }
-            i--;
-            if (i < 0) {
-                break;
-            }
-            extraScore++;
-        }
-//        System.out.println("extraScore = " + extraScore);
-        score *= extraScore;
-        extraScore = 1;
-//        System.out.println("Go up");
-        i = target.y - 1;
-        while (i > -1) {// go up
-//            System.out.println("Compare with " + forest.get(i).get(x).size);
-            if (forest.get(i).get(target.x).size >= target.size) {
-//                System.out.println("Break on tree size = " + forest.get(i).get(x).size);
-                break;
-            }
-            i--;
-            if (i < 0) {
-                break;
-            }
-            extraScore++;
-        }
-//        System.out.println("extraScore = " + extraScore);
-        score *= extraScore;
-        extraScore = 1;
-//        System.out.println("Go down");
-        i = target.y + 1;
-        while (i < height) {// go down
-//            System.out.println("Compare with " + forest.get(i).get(x).size);
-            if (forest.get(i).get(target.x).size >= target.size) {
-//                System.out.println("Break on tree size = " + forest.get(i).get(x).size);
-                break;
-            }
-            i++;
-            if (i == height) {
-                break;
-            }
-            extraScore++;
-        }
-//        System.out.println("extraScore = " + extraScore);
-        return score * extraScore;
+
+        int rightScore = forest.get(target.y).stream().filter(
+                tree -> tree.x > target.x && (tree.greaterOrEqual(target) || tree.x == width - 1)).map(
+                tree -> tree.x - target.x).reduce(Integer::min).orElse(1);
+
+        int leftScore = forest.get(target.y).stream().filter(
+                tree -> tree.x < target.x && (tree.greaterOrEqual(target) || tree.x == 0)).map(
+                tree -> target.x - tree.x).reduce(Integer::min).orElse(1);
+
+        int upScore = getColumn(forest, target.x).stream().filter(
+                tree -> tree.y < target.y && (tree.greaterOrEqual(target) || tree.y == 0)).map(
+                tree -> target.y - tree.y).reduce(Integer::min).orElse(1);
+
+        int downScore = getColumn(forest, target.x).stream().filter(
+                tree -> tree.y > target.y && (tree.greaterOrEqual(target) || tree.y == height - 1)).map(
+                tree -> tree.y - target.y).reduce(Integer::min).orElse(1);
+
+        return rightScore * leftScore * upScore * downScore;
     }
 
     static void parse(List<Tree> row, boolean ascending) {
@@ -160,6 +107,10 @@ public class Day8 {
 
         public boolean isVisible() {
             return visible;
+        }
+
+        public boolean greaterOrEqual(Tree another) {
+            return this.size >= another.size;
         }
 
 
