@@ -1,11 +1,24 @@
 import java.awt.*;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import static java.lang.Math.abs;
+enum Direction {
+    UP, DOWN, LEFT, RIGHT;
+
+    public static Direction parse(String value) {
+        return switch (value) {
+            case "U" -> UP;
+            case "D" -> DOWN;
+            case "L" -> LEFT;
+            case "R" -> RIGHT;
+            default -> throw new IllegalArgumentException("Cannot create Direction from " + value);
+        };
+    }
+
+}
 
 public class Day9 {
 
@@ -18,101 +31,123 @@ public class Day9 {
         tailVisited.add(new Point(tail));
 
         moves.forEach(move -> {
-            move(head, move);
-            moveTo(tail, head, move.direction, point -> tailVisited.add(new Point(point)));
+            Point headPosition = getPositionAfterFullMove(head, move);
+            while (!head.equals(headPosition)) {
+                move(head, getSingleStepDelta(move.direction));
+                Optional<Delta> deltaToTouch = getSingleStepDelta(tail, head);
+                if (deltaToTouch.isPresent()) {
+                    move(tail, deltaToTouch.get());
+                    tailVisited.add(new Point(tail));
+                }
+            }
         });
 
         long tailVisitedCount = tailVisited.size();
         System.out.println("tailVisitedCount = " + tailVisitedCount);
 
         tailVisited.clear();
-        List<Point> knots = IntStream.range(0, 10).boxed().map(item -> new Point(0, 0)).toList();
-        Point header = knots.get(0);
-        tailVisited.add(new Point(knots.get(8)));
+        List<Point> knots =
+                IntStream.range(0, 10).boxed().map(item -> new Point(0, 0)).toList();
+        Point first = knots.get(0);
+        Point last = new Point(knots.get(9));
+        tailVisited.add(last);
 
         moves.forEach(move -> {
-            move(header, move);
-            // todo calc head position
-            // move head by 1, adjust all other
-            for (int i = 0; i < knots.size() - 2; i++) {
-                Point current = knots.get(i);
-                Point next = knots.get(i + 1);
-                moveTo(next, current, move.direction, null);
-            }
-            Point preTail = knots.get(8);
-            Point longTail = knots.get(9);
-            while (detouched(preTail, longTail)) {
-                // move tail
-                switch (move.direction) {
-                    case UP -> stepVertical(preTail.x, true, longTail);
-                    case DOWN -> stepVertical(preTail.x, false, longTail);
-                    case LEFT -> stepHorizontal(preTail.y, false, longTail);
-                    case RIGHT -> stepHorizontal(preTail.y, true, longTail);
-                }
-                tailVisited.add(new Point(longTail));
-            }
+            Point headPosition = getPositionAfterFullMove(first, move);
+            while (!first.equals(headPosition)) {
+                move(first, getSingleStepDelta(move.direction));
+                for (int i = 1; i < knots.size(); i++) {
+                    Point prev = knots.get(i - 1);
+                    Point curr = knots.get(i);
+                    Optional<Delta> deltaToTouch = getSingleStepDelta(curr, prev);
+                    if (deltaToTouch.isPresent()) {
+                        move(curr, deltaToTouch.get());
+                        if (i == knots.size() - 1) {
+                            tailVisited.add(new Point(curr));
+                        }
+                    }
 
+                }
+            }
         });
 
         long longTailCount = tailVisited.size();
         System.out.println("long count = " + longTailCount);
     }
 
-    static void moveTo(Point source, Point target, Direction direction, Consumer<Point> consumer) {
-        while (detouched(source, target)) {
-            // move tail
-            switch (direction) {
-                case UP -> stepVertical(target.x, true, source);
-                case DOWN -> stepVertical(target.x, false, source);
-                case LEFT -> stepHorizontal(target.y, false, source);
-                case RIGHT -> stepHorizontal(target.y, true, source);
+    private static void printKnots(List<Point> knots, int size) {
+        System.out.println();
+        for (int y = size; y >= -(size - 1); y--) {
+            for (int x = -(size - 1); x < size; x++) {
+                int finalX = x;
+                int finalY = y;
+                Optional<Point> found = knots.stream().filter(
+                        knot -> knot.equals(new Point(finalX, finalY))).findFirst();
+                if (found.isPresent()) {
+                    if (knots.indexOf(found.get()) == 0) {
+                        System.out.print("H");
+                    } else {
+                        System.out.print(knots.indexOf(found.get()));
+                    }
+                } else {
+                    System.out.print(".");
+                }
             }
-            if (consumer != null) {
-                consumer.accept(source);
-            }
-            //    System.out.println("tail moved to = " + tail);
+            System.out.println();
         }
-    }
-    static void stepVertical(int xAdjustment, boolean up, Point point) {
-        if (abs(xAdjustment - point.x) > 1) {
-            throw new IllegalArgumentException("Should not adjust " + point + " to x=" + xAdjustment);
-        }
-        point.move(xAdjustment, point.y + (up ? 1 : -1));
+        System.out.println();
     }
 
-    static void stepHorizontal(int yAdjustment, boolean right, Point point) {
-        if (abs(yAdjustment - point.y) > 1) {
-            throw new IllegalArgumentException("Should not adjust " + point + " to y=" + yAdjustment);
-        }
-        point.move(point.x + (right ? 1 : -1), yAdjustment);
+    static Delta getSingleStepDelta(Direction direction) {
+        return switch (direction) {
+            case UP -> new Delta(0, 1);
+            case DOWN -> new Delta(0, -1);
+            case LEFT -> new Delta(-1, 0);
+            case RIGHT -> new Delta(1, 0);
+        };
     }
 
-    static void move(Point point, final Move move) {
+    private static void move(Point point, Delta delta) {
+        point.translate(delta.x(), delta.y());
+    }
+
+    static Point getPositionAfterFullMove(final Point point, final Move move) {
+        Point result = new Point(point);
         switch (move.direction) {
-            case UP -> point.translate(0, move.size);
-            case DOWN -> point.translate(0, -move.size);
-            case LEFT -> point.translate(-move.size, 0);
-            case RIGHT -> point.translate(move.size, 0);
+            case UP -> result.translate(0, move.size);
+            case DOWN -> result.translate(0, -move.size);
+            case LEFT -> result.translate(-move.size, 0);
+            case RIGHT -> result.translate(move.size, 0);
         }
+        return result;
     }
 
     static boolean detouched(Point a, Point b) {
         return a.distance(b) > 1.5;
     }
 
-    enum Direction {
-        UP, DOWN, LEFT, RIGHT;
-
-        public static Direction parse(String value) {
-            return switch (value) {
-                case "U" -> UP;
-                case "D" -> DOWN;
-                case "L" -> LEFT;
-                case "R" -> RIGHT;
-                default -> throw new IllegalArgumentException("Cannot create Direction from " + value);
-            };
+    static Optional<Delta> getSingleStepDelta(Point source, Point target) {
+        if (!detouched(source, target)) {
+            return Optional.empty();
         }
-
+        double theta = Math.atan2(target.y - source.y, target.x - source.x);
+        boolean positive = theta > 0;
+        int x = 0;
+        int y = 0;
+        if (Math.abs(theta) < 0.4) {
+            x = 1;
+        } else if (Math.abs(theta) > 0.4 && Math.abs(theta) < 1.5) {
+            x = 1;
+            y = positive ? 1 : -1;
+        } else if (Math.abs(theta) > 1.5 && Math.abs(theta) < 1.6) {
+            y = positive ? 1 : -1;
+        } else if (Math.abs(theta) > 1.6 && Math.abs(theta) < 3) {
+            x = -1;
+            y = positive ? 1 : -1;
+        } else if (Math.abs(theta) > 3) {
+            x = -1;
+        }
+        return Optional.of(new Delta(x, y));
     }
 
     static class Move {
@@ -128,5 +163,6 @@ public class Day9 {
 
     }
 
-
+    record Delta(int x, int y) {
+    }
 }
