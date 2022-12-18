@@ -1,6 +1,6 @@
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 enum RegisterName {
@@ -39,21 +39,34 @@ public class Day10 {
         IntStream.range(0, 6).boxed().map(item -> item * 40 + 20).forEach(item -> {
             cyclesToStrength.put(item, null);
         });
-        AtomicInteger cycleCount = new AtomicInteger(1);
-        Register x = new Register(RegisterName.X, 1);
+        AtomicInteger position = new AtomicInteger(0);
+        final Register x = new Register(RegisterName.X, 1);
+        final Sprite sprite = new Sprite(x);
+        AtomicReference<String> line = new AtomicReference<>("");
         commands.forEach(command -> {
+            for (int i = 1; i <= command.getCycles(); i++) {
+                // -------- Draw phase ---------
+                if (sprite.covers(position.get() % 40)) {
+                    line.set(line.get().concat("#"));
+                } else {
+                    line.set(line.get().concat("."));
+                }
+                if ((position.get() + 1) % 40 == 0) {
+                    System.out.println(line.getAndSet(""));
+                }
+                //
+                position.incrementAndGet();
 
-            cycleCount.addAndGet(command.getCycles());
+                // check if we have passed a marked cycle
+                Optional<Integer> cyclePassed = cyclesToStrength.keySet().stream().sorted().filter(
+                        item -> cyclesToStrength.get(item) == null).findFirst().filter(
+                        item -> item < (position.get() + 1));
 
-            // check if we have passed a marked cycle
-            Optional<Integer> cyclePassed = cyclesToStrength.keySet().stream().sorted().filter(
-                    item -> cyclesToStrength.get(item) == null).findFirst().filter(item -> item < cycleCount.get());
-
-            // add current X value to the cycle strength found
-            cyclePassed.ifPresent(key -> {
-                System.out.println(MessageFormat.format("Cycle {0} has passed. X value is {1}", key, x.value));
-                cyclesToStrength.put(key, x.value);
-            });
+                // add current X value to the cycle strength found
+                cyclePassed.ifPresent(key -> {
+                    cyclesToStrength.put(key, x.value);
+                });
+            }
 
             RegisterName target = command.registerName;
             if (target != null && target.equals(RegisterName.X)) {
@@ -61,11 +74,18 @@ public class Day10 {
                     x.setValue(x.getValue() + command.value);
                 }
             }
+
         });
 
         System.out.println("Strength = " + cyclesToStrength.entrySet().stream().map(
                 entry -> entry.getKey() * entry.getValue()).reduce(Integer::sum).orElse(0));
 
+    }
+
+    record Sprite(Register x) {
+        boolean covers(int position) {
+            return x.value >= position - 1 && x.value <= position + 1;
+        }
     }
 
     static class Command {
