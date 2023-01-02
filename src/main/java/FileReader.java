@@ -46,7 +46,7 @@ public class FileReader<T> {
         List<T> acc = new ArrayList<>();
         readStream(fileStream, (index, line) -> {
             if (groupSeparator.equals(line)) {
-                result.add(acc);
+                result.add(new ArrayList<>(acc));
                 acc.clear();
             } else {
                 if (countingLineConverter != null) {
