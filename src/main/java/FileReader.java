@@ -106,7 +106,6 @@ public class FileReader<T> {
             int index = 0;
             while ((line = reader.readLine()) != null) {
                 consumer.accept(index++, line);
-                //todo: missing last line/group here if using accumulator
             }
         } catch (IOException e) {
             System.out.println(MessageFormat.format("Error reading file: {0}", e.getMessage()));
