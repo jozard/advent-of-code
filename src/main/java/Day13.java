@@ -1,8 +1,6 @@
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Day13 {
 
@@ -14,26 +12,49 @@ public class Day13 {
 
         List<Integer> rightOrderIndexes = new ArrayList<>();
         for (int i = 0; i < groups.size(); i++) {
-            System.out.println("== Pair " + (i + 1) + " ==");
             Packet left = groups.get(i).get(0);
             Packet right = groups.get(i).get(1);
 
-            Optional<Boolean> result = comparePackets(left, right);
-            if (result.isPresent() && result.get()) {
-                System.out.println(MessageFormat.format("Packets {0} and {1} are in right order", left, right));
+            int result = comparePackets(left, right);
+            if (result < 0) {
                 rightOrderIndexes.add(i + 1);
             }
         }
+
+        // -- Part 2
+        List<Packet> dividers = List.of(
+                new Packet(List.of(new Packet(List.of(new Packet(2))))),
+                new Packet(List.of(new Packet(List.of(new Packet(6))))
+                ));
+        dividers.forEach(Packet::setDivider);
+
+
+        List<Packet> sourcePackets = groups.stream().flatMap(Collection::stream).toList();
+        List<Packet> sortedPackets = Stream.concat(dividers.stream(), sourcePackets.stream()).sorted(
+                Day13::comparePackets).toList();
+        System.out.println("Source packets: ");
+        sourcePackets.forEach(System.out::println);
+        System.out.println();
+
+        System.out.println("sortedPackets: ");
+        sortedPackets.forEach(System.out::println);
+        System.out.println();
+        int[] dividerIndexes = IntStream.range(0, sortedPackets.size()).filter(
+                i -> sortedPackets.get(i).divider).map(item -> item + 1).toArray();
+        System.out.println("dividerIndexes = " + Arrays.toString(dividerIndexes));
+        int decoderKey = Arrays.stream(dividerIndexes).reduce((left, right) -> left * right).orElseThrow();
+
         System.out.println("rightOrderIndexes = " + rightOrderIndexes);
         System.out.println(
                 "Right order indexes sum = " + rightOrderIndexes.stream().reduce(Integer::sum));
+        System.out.println("decoderKey = " + decoderKey);
+
     }
 
-    private static Optional<Boolean> comparePackets(Packet left, Packet right) {
-        System.out.println(MessageFormat.format("Compare packets {0} and {1}", left, right));
+    private static int comparePackets(Packet left, Packet right) {
         // both numbers
         if (left.getValue().isPresent() && right.getValue().isPresent()) {
-            return compareNumbers(left.value, right.value);
+            return Integer.compare(left.value, right.value);
         }
         // both lists
         if (left.getValue().isEmpty() && right.getValue().isEmpty()) {
@@ -43,35 +64,20 @@ public class Day13 {
         }
         // one is list
         if (left.getValue().isEmpty()) {
-            System.out.println("Convert left to a right to a list");
             return compareLists(left.children, List.of(right));
         }
-        System.out.println("Convert left to a right to a list");
         return compareLists(List.of(left), right.children);
     }
 
-    private static Optional<Boolean> compareLists(List<Packet> leftChildren, List<Packet> rightChildren) {
-        System.out.println(MessageFormat.format("Compare lists {0} and {1}", Arrays.toString(leftChildren.toArray()),
-                Arrays.toString(rightChildren.toArray())));
+    private static int compareLists(List<Packet> leftChildren, List<Packet> rightChildren) {
         int compareLength = Math.min(leftChildren.size(), rightChildren.size());
-        System.out.println("Compare " + compareLength + " first items");
         for (int i = 0; i < compareLength; i++) {
-            Optional<Boolean> comparisonResult = comparePackets(leftChildren.get(i), rightChildren.get(i));
-            if (comparisonResult.isPresent()) {
+            int comparisonResult = comparePackets(leftChildren.get(i), rightChildren.get(i));
+            if (comparisonResult != 0) {
                 return comparisonResult;
             }
         }
-        if (leftChildren.size() < rightChildren.size()) {
-            return Optional.of(true);
-        }
-        if (leftChildren.size() > rightChildren.size()) {
-            return Optional.of(false);
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<Boolean> compareNumbers(int left, int right) {
-        return left == right ? Optional.empty() : Optional.of(left < right);
+        return Integer.compare(leftChildren.size(), rightChildren.size());
     }
 
     private static List<Packet> parseListPacket(String value) {
@@ -143,13 +149,22 @@ public class Day13 {
     static class Packet {
         private Integer value = null;
         private List<Packet> children;
+        private boolean divider = false;
 
         public Packet(List<Packet> children) {
             this.children = children;
         }
 
+        public Packet(Integer value) {
+            this.value = value;
+        }
+
         public Packet() {
             this.children = new ArrayList<>();
+        }
+
+        public void setDivider() {
+            this.divider = true;
         }
 
         public Optional<Integer> getValue() {

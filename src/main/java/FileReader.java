@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -54,9 +55,11 @@ public class FileReader<T> {
                 } else {
                     acc.add(lineConverter.apply(line));
                 }
-
             }
         });
+        if (acc.size() > 0) {
+            result.add(new ArrayList<>(acc));
+        }
         return result;
     }
 
@@ -71,10 +74,19 @@ public class FileReader<T> {
                 acc.add(lineConverter.apply(line));
             }
             if (acc.size() == groupSize) {
-                result.add(acc);
+                result.add(new ArrayList<>(acc));
                 acc.clear();
             }
         });
+        if (acc.size() > 0) {
+            if (acc.size() == groupSize) {
+                result.add(new ArrayList<>(acc));
+            } else {
+                throw new IllegalStateException(
+                        MessageFormat.format("Failed read file: Last {0} lines do not match group size = {}",
+                                Arrays.toString(acc.toArray()), groupSize));
+            }
+        }
         return result;
     }
 
@@ -94,6 +106,7 @@ public class FileReader<T> {
             int index = 0;
             while ((line = reader.readLine()) != null) {
                 consumer.accept(index++, line);
+                //todo: missing last line/group here if using accumulator
             }
         } catch (IOException e) {
             System.out.println(MessageFormat.format("Error reading file: {0}", e.getMessage()));
