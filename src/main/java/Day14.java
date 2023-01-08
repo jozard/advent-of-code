@@ -30,12 +30,17 @@ public class Day14 {
         int minY = wallPoints.stream().map(point -> point.y).min(Integer::compare).orElseThrow();
         int maxY = wallPoints.stream().map(point -> point.y).max(Integer::compare).orElseThrow();
 
-        int xShift = 1 - minX; // shift x coordinates towards 0; add extra x position to the left
+        int caveHeight = maxY + 3;
+        int caveWidth = caveHeight * 2; // make cave square
+
+        int pouringX = caveHeight;
+
+        int xShift = pouringX - 500;
         wallPoints.forEach(point -> point.setLocation(point.x + xShift, point.y));
 
-        int caveWidth = maxX - minX + 3;
-        int caveHeight = maxY + 2;
-        int pouringX = 500 + xShift;
+        // add bottom floor
+        IntStream.range(0, caveWidth).boxed().forEach(index -> wallPoints.add(new Point(index, caveHeight - 1)));
+
         Cave cave = new Cave(caveWidth, caveHeight, wallPoints);
 
         cave.print();
@@ -44,7 +49,7 @@ public class Day14 {
         int unitCount = 0;
         int x = pouringX;
         int y = 0;
-        while (y < maxY) {
+        while (true) {
 
             if (cave.getTile(x, y + 1).isFree()) {
                 y++;
@@ -57,14 +62,15 @@ public class Day14 {
             } else {
                 cave.setTile(new Tile(Tile.Sprite.SAND), x, y);
 
-                cave.print();
-                System.out.println();
-
                 unitCount++;
+                if (x == pouringX && y == 0) {
+                    break;
+                }
                 x = pouringX;
                 y = 0;
             }
         }
+        cave.print();
         System.out.println("unitCount = " + unitCount);
 
     }
@@ -101,14 +107,6 @@ public class Day14 {
         return IntStream.range(start, end).boxed().map(toPoint).collect(
                 Collectors.toSet());
     }
-
-    private static void assertHorizontalWall(Point start, Point end) {
-        if (start.y != end.y) {
-            throw new IllegalArgumentException(
-                    MessageFormat.format("Illegal wall start and end points: {}, {}", start, end));
-        }
-    }
-
 
     record Wall(LinkedList<Point> pinPoints) {
     }
@@ -166,10 +164,6 @@ class Tile {
             case SAND -> '0';
             case STONE -> '#';
         };
-    }
-
-    public void setSprite(Sprite sprite) {
-        this.sprite = spriteToChar(sprite);
     }
 
     public boolean isFree() {
