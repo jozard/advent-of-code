@@ -2,51 +2,58 @@ import math
 import re
 lines = open("data/day_3.data", "r").readlines()
 
-part_number_sum = 0
 
-previous_line = dict(matches=[],symbols=[])
-
-def is_adjucent(symbol, match):
-    rng = [*range(match.start()-1, match.end()+1, 1)]
-    print(f'symbol start= {symbol.start()}, match.start()-1 = {match.start()-1}, match.end() = {match.end()}, range={rng}')
-    result = symbol.start() in rng
-    return result
+previous_line = dict(matches=[], symbols=[])
+gears = {} # a gear is a dict: gear index -> list of numbers
+gear_symbols = []
     
+def process_above(symbol, match):
+    rng = [*range(match.start()-1, match.end()+1, 1)]
+    result = symbol.start() in rng
+    if result==True:
+        update_gear(symbol, int(match.group()))
+
+def process(symbol, match):
+    result = symbol.start()==match.start()-1 or symbol.start()==match.end()
+    if result==True:
+        update_gear(symbol, int(match.group())) 
+    
+        
+def update_gear(symbol, value):
+    if symbol in gear_symbols:
+        gears[gear_symbols.index(symbol)].append(value)    
+    else:
+        gear_symbols.append(symbol)     
+        gears[gear_symbols.index(symbol)] = [value]
+                  
     
 for line in lines:
     print(line)
     matches = list(re.finditer(r'\d+', line.strip()))
-    symbols = list(re.finditer(r'[^.^0-9]', line.strip()))
+    symbols = list(re.finditer(r'\*', line.strip()))
     
     # add parts from previous line non-adjucent current line symbols
     for match in previous_line['matches']:
-        print(f'checking {match} from previous line')
-        if any(is_adjucent(symbol, match) for symbol in symbols):
-            arg = list(symbols)
-            print(f'match group {match.group()} is adjuscent to some from {arg} add it to sum')
-            part_number_sum += int(match.group())
+        for symbol in symbols:
+            process_above(symbol, match)   
+            
             
     previous_line['matches'] = []
-    print(f'clear previous matches')
     # move current line parts to previous matching them with previous and current line symbols
     for match in matches:
-        print(f'checking {match} from current line')
-        if any((symbol.start()==match.start()-1 or symbol.start()==match.end()) for symbol in symbols):
-            arg = list(symbols)
-            print(f'match group {match.group()} is adjuscent to some from current symbols {arg} add it to sum')
-            part_number_sum += int(match.group())
-        elif any(symbol.start() in [*range(match.start()-1, match.end()+1)] for symbol in previous_line['symbols']):
-            arg = previous_line['symbols']
-            print(f'match group {match.group()} is adjuscent to some from previous symbols {arg} add it to sum')
-            part_number_sum += int(match.group()) 
-        else:
-            print(f'add match {match} to previous matches to check later')        
-            previous_line['matches'].append(match)
-            
-        arg = previous_line['matches']
-        print(f'previous matches updated: {arg}')        
+        for symbol in symbols:
+            process(symbol, match)
+        for symbol in previous_line['symbols']:
+            process_above(symbol, match)    
+        
     previous_line['symbols'] = symbols
-    print(f'previous symbols updated: {symbols}')
+    previous_line['matches'] = matches
+    
+gear_ratios = 0
+
+for gear in gears.values():
+    if len(gear) == 2:
+        gear_ratios += gear[0]*gear[1] 
+print(gear_ratios)
                
 
-print(part_number_sum)
