@@ -18,20 +18,23 @@ with open('data/day_11.data') as f:
         if not '#' in col:
             empty_cols.append(i)      
             
+    print(f'empty columns = {empty_cols}')        
+    print(f'empty rows = {empty_rows}')        
     galaxies = []
     for i in range(len(space)):
         for j in range(len(space[i])):
             if space[i][j]=='#':
-                galaxies.append((i+sum(item<i for item in empty_rows),j+sum(item<j for item in empty_cols)))                            
+                above = sum(item<i for item in empty_rows)
+                before = sum(item<j for item in empty_cols)
+                galaxies.append((i+999999*above,j+999999*before))                            
                             
     print(galaxies)
     s = 0
     for a in range(len(galaxies)):
         for b in range(a+1, len(galaxies)):
             m = galaxies[a]
-            n = galaxies[b]
-            
-            s += abs(m[1]-n[1]) + abs(m[0]-n[0])                          
+            n = galaxies[b]           
+            s += abs(m[1]-n[1]) + abs(m[0]-n[0])
 
     print(f'{time.time() - start_time}s: {s}')
     f.close()
