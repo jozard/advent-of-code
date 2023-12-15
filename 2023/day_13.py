@@ -17,37 +17,36 @@ with open('data/day_13.data') as f:
 
     print(mirrors)
     
-    def cnt(mirror, coef):
-        cnt = 0
+    def is_perfect(mirror, i):
+        m=i
+        n=i+1
+        while m>=0 and n<len(mirror):                 
+            if mirror[m]!=mirror[n]:
+                return False
+            m-=1
+            n+=1      
+        return True      
+    
+    def get_reflection_size(mirror):
         for i in range(len(mirror)-1):
-            if mirror[i]==mirror[i+1]:
-                m=i
-                n=i+1
-                perfect = True
-                while m>=0 and n<len(mirror):                 
-                    if mirror[m]!=mirror[n]:
-                        perfect = False
-                        break
-                    m-=1
-                    n+=1
-                if perfect:
-                    cnt+=coef*(i+1)    
-        return cnt                    
+            if mirror[i]==mirror[i+1]: 
+                if is_perfect(mirror, i):
+                    return i+1    
+        return 0                             
         
     counter=0
     for mirror in mirrors:
         #find horizontal reflection 
-        counter+=cnt(mirror, 100)    
+        counter+=100*get_reflection_size(mirror)    
         
             
         row_size = len(mirror[0])
         columns=['']*row_size
-
         for line in mirror:
             for i in range(row_size):
                 columns[i] = columns[i] + line[i]
                     
-        counter+=cnt(columns, 1)   
+        counter+=get_reflection_size(columns)   
                     
     print(f'{time.time() - start_time}s: {counter}')
     f.close()
