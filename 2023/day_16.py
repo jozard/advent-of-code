@@ -7,10 +7,6 @@ with open('data/day_16.data') as f:
     start_time = time.time()
     grid = [list(line) for line in f.read().splitlines()]
 
-    direction = 'east'
-
-    energized = {}
-
 
     def process_splitter(row: int, col: int, horizontal: bool, from_direction: str):
         if horizontal:
@@ -60,9 +56,21 @@ with open('data/day_16.data') as f:
                     return process_mirror(row, col, value == '/', from_direction)
         return
 
-
-    process_tile(0, 0, 'west')
-    total = len(energized)
+    total = 0
+    for row in range(len(grid)):
+        energized = {}
+        process_tile(row, 0, 'west')
+        total = max(total, len(energized))
+        energized = {}
+        process_tile(row, len(grid[0]) - 1, 'east')
+        total = max(total, len(energized))
+    for col in range(len(grid[0])):
+        energized = {}
+        process_tile(0, col, 'north')
+        total = max(total, len(energized))
+        energized = {}
+        process_tile(len(grid) - 1, col, 'south')
+        total = max(total, len(energized))
 
     print(f'{time.time() - start_time}s: {total}')
     f.close()
