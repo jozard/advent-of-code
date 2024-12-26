@@ -15,3 +15,17 @@ lines = [l.strip() for l in open("data/day_3.data", "r").readlines()]
 # part 1
 result = reduce(lambda x, y: x + get_result(y), lines, 0)
 print(result)
+
+# part 2
+line = ''.join(lines)
+result = 0
+start = 0
+while -1 < start < len(line):
+    end = line.find('don\'t()', start)
+    if end == -1:
+        end = len(line)
+    substr = line[start:end]
+    result += get_result(substr)
+    start = line.find('do()', end)
+
+print(result)
