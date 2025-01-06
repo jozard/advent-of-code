@@ -1,3 +1,5 @@
+from functools import cmp_to_key
+
 rules = []
 updates = []
 with open("data/day_5.data", "r") as f:
@@ -28,9 +30,33 @@ def get_update_mid(update):
     return update[len(update) // 2]
 
 
+def compare(x, y):
+    if x in rules_dict.keys():
+        if y in rules_dict[x]:
+            return 1  # x definitely > y
+        else:
+            if y in rules_dict.keys():
+                if x in rules_dict[y]:
+                    return -1  # x definitely < y
+                else:
+                    return 0  # impossible branch
+            else:
+                return 0  # impossible branch
+    else:
+        if y in rules_dict.keys():
+            if x in rules_dict[y]:
+                return -1  # x definitely < y
+            else:
+                return 0  # impossible branch
+        else:
+            return 0  # impossible branch
+
+
 def check_update(update, d) -> bool:
     for i in range(len(update) - 1):
         current = update[i]
+        if current not in d.keys():
+            return False
         for j in range(i + 1, len(update) - 1):
             item = update[j]
             if item not in d[current]:
@@ -40,8 +66,21 @@ def check_update(update, d) -> bool:
 
 # part 1
 result = 0
-# weights = build_weights()
 for update in updates:
     if check_update(update, rules_dict):
         result += int(get_update_mid(update))
+print(result)
+
+# part 2
+result = 0
+
+
+def fix_update(update):
+    return sorted(update, key=cmp_to_key(compare), reverse=True)
+
+
+for update in updates:
+    if not check_update(update, rules_dict):
+        new_update = fix_update(update)
+        result += int(get_update_mid(new_update))
 print(result)
